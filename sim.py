@@ -2,67 +2,112 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 
-# Parámetros del modelo (ajustables según literatura)
+# Parámetros mejorados según el documento
 params = {
-    # Anticuerpos maternos (IgG)
-    "IgG_maternal_init": 1.0,  # Nivel inicial de IgG materna (arbitrario)
-    "decay_maternal": 0.03,    # Tasa de degradación de IgG materna (vida media ~21 días)
-
-    # Vacuna PCV (respuesta del bebé)
-    "k_activation": 0.5,       # Tasa de activación de linfocitos B por antígeno
-    "k_proliferation": 0.2,    # Tasa de proliferación de células plasmáticas
-    "decay_IgG": 0.01,         # Tasa de degradación de IgG del bebé
-    "threshold_protection": 0.35,  # Correlato de protección (ej. 0.35 µg/mL para PCV20)
-
-    # Tiempo
-    "days": 365,               # Duración de la simulación (1 año)
-    "doses": [30, 60, 180]     # Días de administración de dosis (ej. esquema 3+1)
+    # Sistema inmunitario materno
+    "IgG_maternal_init": 1.2,       # Nivel inicial IgG1 (principal transferida)
+    "decay_maternal": 0.033,        # Vida media 21 días (ln(2)/21 ≈ 0.033)
+    "IgA_lactation": 0.8,           # Nivel constante durante lactancia
+    
+    # Componentes inmunológicos bebé
+    "k_dendritic": 0.4,             # Activación células dendríticas
+    "k_T_activation": 0.25,         # Activación linfocitos T CD4+
+    "k_B_proliferation": 0.15,      # Proliferación linfocitos B
+    "decay_IgG": 0.015,             # Vida media IgG bebé (~46 días)
+    "maturation_factor": 0.002,     # Maduración gradual del sistema
+    
+    # Vacunación
+    "doses": [60, 120, 360],        # Esquema 2+1 (2, 4, 12 meses)
+    "adjuvant_boost": 1.5,          # Potenciación por adyuvantes
+    
+    # Correlatos de protección por serotipo (µg/ml)
+    "thresholds": {
+        "1": 0.35, "5": 0.23, 
+        "6B": 0.10, "19A": 0.12
+    }
 }
 
 def immune_response(y, t, params):
-    IgG_maternal, IgG_baby = y  # Variables de estado
-
-    # Degradación de IgG materna
+    IgG_maternal, dendritic, T_cells, B_cells, IgG_baby_1, IgG_baby_6B = y
+    
+    # Efecto blunting (supresión por IgG materna)
+    blunting = 1 - (IgG_maternal/params["IgG_maternal_init"])
+    
+    # Maduración progresiva del sistema inmunitario
+    maturation = 1 + params["maturation_factor"] * t
+    
+    # Señal de vacunación (con adyuvantes)
+    vaccine_signal = 0
+    for dose in params["doses"]:
+        if 0 < t - dose < 7:
+            vaccine_signal = params["adjuvant_boost"]
+    
+    # Ecuaciones diferenciales
     dIgG_maternal = -params["decay_maternal"] * IgG_maternal
-
-    # Respuesta a la vacuna (activación linfocitos B -> producción de IgG)
-    vaccine_stimulus = 0
-    for dose_day in params["doses"]:
-        if abs(t - dose_day) < 7:  # Estímulo de 7 días tras cada dosis
-            vaccine_stimulus = params["k_activation"]
-
-    dIgG_baby = (params["k_proliferation"] * vaccine_stimulus) - params["decay_IgG"] * IgG_baby
-
-    return [dIgG_maternal, dIgG_baby]
+    
+    ddendritic = (params["k_dendritic"] * vaccine_signal 
+                 - 0.1 * dendritic)  # Decaimiento células dendríticas
+    
+    dT = (params["k_T_activation"] * dendritic * maturation 
+         - 0.05 * T_cells)
+    
+    dB = (blunting * params["k_B_proliferation"] * T_cells * vaccine_signal 
+         - 0.07 * B_cells)
+    
+    # Producción de anticuerpos para diferentes serotipos
+    dIgG1 = 0.3 * B_cells * (IgG_baby_1 < params["thresholds"]["1"]) - params["decay_IgG"] * IgG_baby_1
+    
+    dIgG6B = 0.15 * B_cells * (IgG_baby_6B < params["thresholds"]["6B"]) - params["decay_IgG"] * IgG_baby_6B
+    
+    return [dIgG_maternal, ddendritic, dT, dB, dIgG1, dIgG6B]
 
 # Condiciones iniciales
-y0 = [params["IgG_maternal_init"], 0]  # Nivel inicial de IgG materna y 0 en el bebé
-t = np.linspace(0, params["days"], params["days"])
+y0 = [
+    params["IgG_maternal_init"],  # IgG maternal
+    0.0,   # Células dendríticas
+    0.0,   # Linfocitos T
+    0.0,   # Linfocitos B
+    0.0,   # IgG serotipo 1
+    0.0    # IgG serotipo 6B
+]
 
-# Resolver ecuaciones diferenciales
+t = np.linspace(0, 365, 365)
+
+# Resolver el sistema
 solution = odeint(immune_response, y0, t, args=(params,))
-IgG_maternal = solution[:, 0]
-IgG_baby = solution[:, 1]
+IgG_maternal = solution[:,0]
+IgG_1 = solution[:,4]
+IgG_6B = solution[:,5]
 
-plt.figure(figsize=(10, 6))
-plt.plot(t, IgG_maternal, label="IgG materna", linestyle="--")
-plt.plot(t, IgG_baby, label="IgG del bebé (vacuna)", color="red")
-plt.axhline(y=params["threshold_protection"], color="green", linestyle=":", label="Umbral de protección")
+# Visualización
+plt.figure(figsize=(12, 6))
 
-# Marcar dosis
+# Curvas de anticuerpos
+plt.plot(t, IgG_maternal, '--', label='IgG Materna')
+plt.plot(t, IgG_1, label='IgG Bebé (Serotipo 1)')
+plt.plot(t, IgG_6B, label='IgG Bebé (Serotipo 6B)')
+
+# Umbrales de protección
+for sero, thresh in params["thresholds"].items():
+    plt.axhline(thresh, linestyle=':', alpha=0.7, 
+                label=f'Umbral {sero} ({thresh} µg/ml)')
+
+# Eventos de vacunación
 for dose in params["doses"]:
-    plt.axvline(x=dose, color="gray", linestyle=":", alpha=0.5)
+    plt.axvline(dose, color='gray', linestyle='--', alpha=0.5)
 
-plt.title("Respuesta Inmunológica del Bebé a la Vacuna PCV")
-plt.xlabel("Días desde el nacimiento")
-plt.ylabel("Nivel de anticuerpos (IgG)")
-plt.legend()
+plt.title('Respuesta Inmunológica Mejorada a PCV\n(Incluye Múltiples Serotipos y Componentes Inmunológicos)')
+plt.xlabel('Días desde nacimiento')
+plt.ylabel('Nivel de Anticuerpos (Unidades Arbitrarias)')
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.grid(True)
+plt.tight_layout()
 plt.show()
 
-# Verificar si se alcanza el correlato de protección
-protection_day = np.where(IgG_baby >= params["threshold_protection"])[0]
-if len(protection_day) > 0:
-    print(f"Protección alcanzada a los {protection_day[0]} días")
-else:
-    print("No se alcanzó el umbral de protección")
+# Verificación de protección
+for sero, thresh in params["thresholds"].items():
+    idx = np.argmax(solution[:,4 if sero=="1" else 5] >= thresh)
+    if solution[:,4 if sero=="1" else 5][idx] >= thresh:
+        print(f'Protección alcanzada para {sero} a los {t[idx]:.0f} días')
+    else:
+        print(f'Protección NO alcanzada para {sero}')
