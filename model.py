@@ -106,7 +106,7 @@ class ImmuneSystem:
         self.plasma_cells[serotype] = []
         self.antibody_levels[serotype] = 0.0
     
-    def generate_naive_cells(self, antigen: Antigen, n_cells: int = 50) -> List[BCell]:
+    def generate_naive_cells(self, antigen: Antigen, n_cells: int = 10) -> List[BCell]:
         """Genera células B naive con receptores aleatorios"""
         return [
             BCell(receptors=[
@@ -117,7 +117,7 @@ class ImmuneSystem:
             for _ in range(n_cells)
         ]
     
-    def germinal_center_reaction(self, antigen: Antigen, bcells: List[BCell], cycles: int = 5):
+    def germinal_center_reaction(self, antigen: Antigen, bcells: List[BCell], cycles: int = 3):
         """Simula múltiples ciclos de mutación y selección"""
         selected_cells = bcells
         
@@ -226,5 +226,59 @@ def run_simulation():
     plt.grid()
     plt.show()
 
+    # =====================
+# SIMULACIÓN Y VISUALIZACIÓN (VERSIÓN DIARIA)
+# =====================
+
+def run_daily_simulation():
+    """Versión diaria de la simulación"""
+    # 1. Configuración inicial (igual)
+    system = ImmuneSystem()
+    pcv_serotypes = [
+        Antigen(serotype="4", charge=0.7, hydrophobicity=0.6, size=0.8),
+        Antigen(serotype="6B", charge=0.5, hydrophobicity=0.7, size=1.0),
+        Antigen(serotype="23F", charge=0.65, hydrophobicity=0.55, size=0.75)
+    ]
+    
+    # 2. Esquema de vacunación ajustado a días
+    days_schedule = [90, 180, 365]  
+    # for day in days_schedule:
+    #     for antigen in pcv_serotypes:
+    #         system.vaccinate(antigen)
+    
+    # 3. Seguimiento por 720 días (2 años)
+    total_days = 720
+    time_points = list(range(total_days))
+    antibody_levels = {s.serotype: [] for s in pcv_serotypes}
+    
+    for antigen in pcv_serotypes:
+        system.vaccinate(antigen, dose = 0)
+
+    for current_day in range(total_days):
+        # Avanzar un día
+        system.time_step(days=1)
+        
+        if current_day in days_schedule:
+            for antigen in pcv_serotypes:
+                system.vaccinate(antigen)
+
+        # Registrar datos diariamente
+        for serotype in antibody_levels:
+            antibody_levels[serotype].append(system.antibody_levels[serotype])
+    
+    # 4. Visualización ajustada
+    plt.figure(figsize=(12, 7))
+    for serotype, levels in antibody_levels.items():
+        plt.plot(time_points, levels, label=f"Serotipo {serotype}", alpha=0.8)
+    
+    plt.axhline(y=0.35, color='gray', linestyle='--', label="Umbral protector")
+    plt.title("Respuesta Inmune Diaria a Vacuna Conjugada")
+    plt.xlabel("Días post-vacunación")
+    plt.ylabel("Nivel de IgG (µg/mL)")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.show()
+
+
 if __name__ == "__main__":
-    run_simulation()
+    run_daily_simulation()
