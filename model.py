@@ -106,7 +106,7 @@ class ImmuneSystem:
         self.plasma_cells[serotype] = []
         self.antibody_levels[serotype] = 0.0
     
-    def generate_naive_cells(self, antigen: Antigen, n_cells: int = 10) -> List[BCell]:
+    def generate_naive_cells(self, antigen: Antigen, n_cells: int = 50) -> List[BCell]:
         """Genera células B naive con receptores aleatorios"""
         return [
             BCell(receptors=[
@@ -117,7 +117,7 @@ class ImmuneSystem:
             for _ in range(n_cells)
         ]
     
-    def germinal_center_reaction(self, antigen: Antigen, bcells: List[BCell], cycles: int = 3):
+    def germinal_center_reaction(self, antigen: Antigen, bcells: List[BCell], cycles: int = 5):
         """Simula múltiples ciclos de mutación y selección"""
         selected_cells = bcells
         
@@ -188,25 +188,25 @@ def run_simulation():
     system = ImmuneSystem()
     pcv_serotypes = [
         Antigen(serotype="4", charge=0.7, hydrophobicity=0.6, size=0.8),
-        Antigen(serotype="6B", charge=0.5, hydrophobicity=0.7, size=0.7),
-        Antigen(serotype="23F", charge=0.8, hydrophobicity=0.5, size=0.6)
+        Antigen(serotype="6B", charge=0.5, hydrophobicity=0.7, size=1.0),
+        Antigen(serotype="23F", charge=0.65, hydrophobicity=0.55, size=0.75)
     ]
     
     # 2. Esquema de vacunación (0, 2, 6 meses)
     for antigen in pcv_serotypes:
-        system.vaccinate(antigen, dose=5)  # Dosis inicial
+        system.vaccinate(antigen)  # Dosis inicial
     
     # 3. Seguimiento por 2 años
     time_points = []
     antibody_levels = {s.serotype: [] for s in pcv_serotypes}
     
-    for month in range(124):
+    for month in range(24):
         system.time_step(days=30)
         
         # Refuerzos (2da y 3ra dosis)
         if month == 2 or month == 6:
             for antigen in pcv_serotypes:
-                system.vaccinate(antigen, dose=3)
+                system.vaccinate(antigen)
         
         # Registrar datos
         time_points.append(month)
