@@ -1,5 +1,6 @@
 # agents/antigen.py
 from dataclasses import dataclass
+from typing import List
 
 @dataclass
 class Antigen:
@@ -9,3 +10,4 @@ class Antigen:
     immunogenicity_factor: float      # Parámetro relativo (ej. 1.0 normal, >1 más inmunogénico)
     protective_threshold: float       # Nivel mínimo de anticuerpos (µg/ml) para protección
     virulence_index: float = 1.0      # Opcional para modelar competencia o prevalencia
+    epitope_vector: List[float]
