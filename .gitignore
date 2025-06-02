@@ -1,3 +1,5 @@
 perp.py
 aaa.md
 sim/__pycache__
+sim/agents/__pycache__
+sim/environment/__pycache__
