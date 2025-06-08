@@ -1,12 +1,13 @@
 # agents/bcell.py
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 @dataclass
 class BCell:
     id: int
     receptors: List[float]
-    affinity: float = 0.0
+    affinity: Dict[str, float] = field(default_factory=dict)
+    serotype: str = ""
     is_memory: bool = False
     clones: int = 0
     family_id: Optional[int] = None
