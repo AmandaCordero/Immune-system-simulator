@@ -6,8 +6,7 @@ from typing import Dict, List, Optional
 class BCell:
     id: int
     receptors: List[float]
-    affinity: Dict[str, float] = field(default_factory=dict)
-    serotype: str = ""
+    affinity: List[float]
     is_memory: bool = False
     clones: int = 0
     family_id: Optional[int] = None
