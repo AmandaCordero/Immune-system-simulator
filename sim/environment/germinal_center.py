@@ -2,6 +2,10 @@
 from agents.BCell import BCell
 from agents.antigen import Antigen
 from typing import List
+from processes.selection import boltzmann_selection
+from processes.affinity import compute_affinity
+from processes.differentiation import differentiate_bcell
+from processes.mutation import mutate_bcell
 
 class GerminalCenter:
     def __init__(self, id: int, antigen: Antigen):
@@ -13,11 +17,15 @@ class GerminalCenter:
         self.factors: float = 1.0  # Recursos limitantes
 
     def seed_naive_cells(self, naive_pool: List[BCell]):
-        # Selecciona y agrega células naïve al GC
-        pass
+        self.bcells = naive_pool
 
-    def run_cycle(self, mutation_engine, selection_process, differentiation_process):
-        # 1. Mutación
-        # 2. Selección (Boltzmann)
-        # 3. Diferenciación (memoria/plasmática)
-        pass
+    def run_cycle(self):
+        if (len(self.bcells) > 0):
+            selected = boltzmann_selection(self.bcells)
+            for cell in selected:
+                # diferenciar y sacar de gc (muerte por apoptosis)
+                pass
+            bc = self.bcells.copy()
+            # division
+            self.bcells = [mutate_bcell(cell) for cell in bc]
+        return (self.memory_cells, self.plasma_cells)

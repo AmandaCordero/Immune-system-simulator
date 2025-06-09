@@ -7,6 +7,7 @@ class BCell:
     id: int
     receptors: List[float]
     affinity: List[float]
+    serotype: str = ""
     is_memory: bool = False
     clones: int = 0
     family_id: Optional[int] = None

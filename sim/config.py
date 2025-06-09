@@ -1,4 +1,6 @@
 # config.py
+import numpy as np
+
 GC_PARAMS = {
     "num_gcs": 5,
     "cycles_per_gc": 4,
@@ -24,5 +26,8 @@ SIMULATION_PARAMS = {
     "duration_days": 730,  # 2 años
     "time_step": 1,        # días
     "vaccination_schedule": [0, 60, 180],  # días
+    "decay_factor" : np.exp(-0.033),  # 0.033 ≈ ln(2)/21
+    "plasma_production_factor": 0.1,
+    "memory_production_factor": 0.02
     # ...
 }
