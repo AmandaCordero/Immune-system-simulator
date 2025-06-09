@@ -12,9 +12,9 @@ def differentiate_bcell(bcell, affinity_threshold_memory=0.8, affinity_threshold
     Returns:
         destino: str, uno de ['memory', 'plasma', 'apoptosis']
     """
-    if bcell.affinity[bcell.serotype] >= affinity_threshold_memory:
+    if bcell.affinity >= affinity_threshold_memory:
         return 'memory'
-    elif bcell.affinity[bcell.serotype] >= affinity_threshold_plasma:
+    elif bcell.affinity >= affinity_threshold_plasma:
         return 'plasma'
     else:
         return 'apoptosis'

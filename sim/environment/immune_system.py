@@ -4,6 +4,7 @@ from environment.germinal_center import GerminalCenter
 from agents.antigen import Antigen
 from agents.BCell import BCell
 from processes.affinity import compute_affinity
+from processes.mutation import mutate_bcell
 from config import GC_PARAMS, SIMULATION_PARAMS
 import numpy as np
 import simpy
@@ -60,8 +61,18 @@ class ImmuneSystem:
         self.bcells_pool = list(bcell_store.items)
  
     def cycle(self):
-        # division de celulas B
-        pass
+        bc = []
+        for cell in self.bcells_pool:
+            # Probabilidad de morir
+            if random.random() < SIMULATION_PARAMS["lf_decay"]:
+                # La célula muere, no se añade a bc
+                continue
+            # Sobrevive, con probabilidad q muta
+            if random.random() < SIMULATION_PARAMS["mutation_p"]:
+                bc.append(cell)
+                cell = mutate_bcell(cell)
+            bc.append(cell)
+        self.bcells_pool = bc
 
     def vaccinate(self, antigens: List[Antigen]):
         self.fillCGs(antigens)
@@ -81,8 +92,8 @@ class ImmuneSystem:
                 self.plasma_pool[ag].append(plasma[ag])
         
         for ag in self.antibody_levels.keys:
-            plasma_production = self.plasma_pool[ag] * SIMULATION_PARAMS.plasma_production_factor
-            memory_production = self.memory_pool[ag] * SIMULATION_PARAMS.memory_production_factor
+            plasma_production = self.plasma_pool[ag] * SIMULATION_PARAMS["plasma_production_factor"]
+            memory_production = self.memory_pool[ag] * SIMULATION_PARAMS["memory_production_factor"]
             self.antibody_levels[ag] = (
                 (self.antibody_levels[ag] + plasma_production + memory_production) * SIMULATION_PARAMS.decay_factor
             )
