@@ -1,5 +1,5 @@
 # processes/mutation.py
-from random import random
+import random
 import numpy as np
 from agents.BCell import BCell
 
@@ -29,7 +29,7 @@ def mutate_bcell(bcell, mutation_rate=0.1, mutation_strength=0.05):
     mutated_bcell = BCell(
         id=bcell.id,
         receptors=new_receptors,
-        affinity=bcell.affinity.copy(),
+        affinity=bcell.affinity,
         is_memory=bcell.is_memory,
         clones=bcell.clones,
         family_id=bcell.family_id,

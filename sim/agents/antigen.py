@@ -4,6 +4,7 @@ from typing import List
 
 @dataclass
 class Antigen:
+    id:int
     serotype: str
     polysaccharide_ug: float          # Cantidad de polisacárido en µg en la vacuna
     carrier_protein: str              # Ej: 'TT', 'CRM197'

@@ -1,12 +1,14 @@
 # main.py
+import random
+from typing import List
 from matplotlib import pyplot as plt
 from config import *
 from agents.antigen import Antigen
+from agents.BCell import BCell
 from environment.immune_system import ImmuneSystem
 
 def main():
     # 1. Inicializa antígenos (serotipos de PCV)
-    from agents.antigen import Antigen
 
     epitope_vectors = {
         "1":  [0.72, 0.15, 0.40, 0.85, 0.50],
@@ -21,17 +23,26 @@ def main():
     
     # Inicialización de la vacuna con los antígenos indicados
     antigens = [
-        Antigen(serotype="1", polysaccharide_ug=2.2, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["1"]),
-        Antigen(serotype="5", polysaccharide_ug=2.2, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["5"]),
-        Antigen(serotype="6B", polysaccharide_ug=4.4, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["6B"]),
-        Antigen(serotype="14", polysaccharide_ug=2.2, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["14"]),
-        Antigen(serotype="18C", polysaccharide_ug=2.2, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["18C"]),
-        Antigen(serotype="19F", polysaccharide_ug=2.2, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["19F"]),
-        Antigen(serotype="23F", polysaccharide_ug=2.2, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["23F"]),
+        Antigen(id = 1,serotype="1", polysaccharide_ug=2.2, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["1"]),
+        Antigen(id = 2,serotype="5", polysaccharide_ug=2.2, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["5"]),
+        Antigen(id = 3,serotype="6B", polysaccharide_ug=4.4, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["6B"]),
+        Antigen(id = 4,serotype="14", polysaccharide_ug=2.2, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["14"]),
+        Antigen(id = 5,serotype="18C", polysaccharide_ug=2.2, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["18C"]),
+        Antigen(id = 6,serotype="19F", polysaccharide_ug=2.2, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["19F"]),
+        Antigen(id = 7,serotype="23F", polysaccharide_ug=2.2, carrier_protein="TT", immunogenicity_factor=1.0, epitope_vector=epitope_vectors["23F"]),
     ]
 
+    def initialize_naive(num_cells: int = 1000, receptor_length: int = 5) -> List['BCell']:
+        """Genera células B naive con receptores aleatorios"""
+        return [
+            BCell(
+                id=i,
+                receptors=[random.random() for _ in range(receptor_length)]
+            ) for i in range(num_cells)
+        ]
+
     # 2. Inicializa sistema inmune
-    immune_system = ImmuneSystem(antigens)
+    immune_system = ImmuneSystem(antigens, initialize_naive())
     # 3. Simula esquema de vacunación y seguimiento
     
     antibody_levels = {s.serotype: [] for s in antigens}
@@ -39,8 +50,7 @@ def main():
 
     for day in range(SIMULATION_PARAMS["duration_days"]):
         if day in SIMULATION_PARAMS["vaccination_schedule"]:
-            for antigen in antigens:
-                immune_system.vaccinate(antigen, dose=5)
+            immune_system.vaccinate(antigens)
         # Registrar datos diariamente
         for serotype in antibody_levels:
             antibody_levels[serotype].append(immune_system.antibody_levels[serotype])

@@ -5,6 +5,7 @@ GC_PARAMS = {
     "num_gcs": 5,
     "cycles_per_gc": 4,
     "lf_decay": 0.1,
+    "THRESHOLD" : 0.6
     # ...
 }
 

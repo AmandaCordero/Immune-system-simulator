@@ -13,6 +13,7 @@ class ImmuneSystem:
     def __init__(self, antigens: List[Antigen], bcells_pool = List[BCell]):
         self.gcs = []
         self.bcells_pool = bcells_pool
+        self.antigens = antigens
         self.memory_pool = {ag.serotype: [] for ag in antigens}
         self.plasma_pool = {ag.serotype: [] for ag in antigens}
         self.antibody_levels = {ag.serotype: 0.0 for ag in antigens}
@@ -39,7 +40,7 @@ class ImmuneSystem:
                     bc = random.choice(bcell_store.items)
                     affinity = compute_affinity(ag.epitope_vector, bc.receptors)
 
-                    if affinity >= GC_PARAMS.THRESHOLD:
+                    if affinity >= GC_PARAMS["THRESHOLD"]:
                         assigned_bcells[ag.id].append(bc)
                         yield bcell_store.get(lambda x: x == bc)
                         # Espera tras un match exitoso
@@ -66,10 +67,10 @@ class ImmuneSystem:
         self.fillCGs(antigens)
         for gc in self.gcs:
             memory, plasma = gc.run_cycle()
-            for ag in self.memory_pool.keys:
-                self.memory_pool[ag].append(memory[ag])
-            for ag in self.plasma_pool.keys:
-                self.plasma_pool[ag].append(plasma[ag])
+            for ag in self.antigens:
+                self.memory_pool[ag.serotype].append(memory[ag.serotype])
+            for ag in self.antigens:
+                self.plasma_pool[ag.serotype].append(plasma[ag.serotype])
 
     def step(self):
         for gc in self.gcs:
