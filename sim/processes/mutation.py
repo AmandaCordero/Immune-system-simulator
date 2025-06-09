@@ -3,7 +3,7 @@ import random
 import numpy as np
 from agents.BCell import BCell
 
-def mutate_bcell(bcell, mutation_rate=0.1, mutation_strength=0.05):
+def mutate_bcell(bcell: BCell, mutation_rate=0.1, mutation_strength=0.05):
     """
     Aplica hipermutación somática a la célula B modificando su vector receptor.
     
@@ -29,12 +29,7 @@ def mutate_bcell(bcell, mutation_rate=0.1, mutation_strength=0.05):
     mutated_bcell = BCell(
         id=bcell.id,
         receptors=new_receptors,
-        affinity=bcell.affinity,
-        is_memory=bcell.is_memory,
-        clones=bcell.clones,
-        family_id=bcell.family_id,
-        mutations=bcell.mutations + 1,
-        blocked=bcell.blocked,
-        alive=bcell.alive
+        affinity=0.0,
+        serotype=bcell.serotype
     )
     return mutated_bcell

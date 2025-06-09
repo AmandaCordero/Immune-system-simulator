@@ -50,6 +50,7 @@ class GerminalCenter:
                 if random.random() < SIMULATION_PARAMS["mutation_p"]:
                     bc.append(cell)
                     cell = mutate_bcell(cell)
+                    cell.affinity = compute_affinity(self.antigen.epitope_vector, cell.receptors)
                 bc.append(cell)
             self.bcells_pool = bc
         
