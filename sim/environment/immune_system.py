@@ -62,7 +62,7 @@ class ImmuneSystem:
         # division de celulas B
         pass
 
-    def vaccinate(self, antigens: List[Antigen], dose: int):
+    def vaccinate(self, antigens: List[Antigen]):
         self.fillCGs(antigens)
         for gc in self.gcs:
             memory, plasma = gc.run_cycle()
