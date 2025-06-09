@@ -10,11 +10,11 @@ def differentiate_bcell(bcell, affinity_threshold_memory=0.8, affinity_threshold
         affinity_threshold_plasma: afinidad mínima para diferenciarse en célula plasmática.
         
     Returns:
-        destino: str, uno de ['memory', 'plasma', 'apoptosis']
+        destino: str, uno de ['memory', 'plasma', 'NO']
     """
     if bcell.affinity >= affinity_threshold_memory:
         return 'memory'
     elif bcell.affinity >= affinity_threshold_plasma:
         return 'plasma'
     else:
-        return 'apoptosis'
+        return 'NO'
