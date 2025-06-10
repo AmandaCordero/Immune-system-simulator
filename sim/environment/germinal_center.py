@@ -21,7 +21,7 @@ class GerminalCenter:
     def seed_naive_cells(self, naive_pool: List[BCell]):
         self.bcells = naive_pool
 
-    def run_cycle(self, p):
+    def run_cycle(self):
         if len(self.bcells) > 0:
             selected = boltzmann_selection(self.bcells)
             
@@ -41,7 +41,7 @@ class GerminalCenter:
                     self.bcells.remove(cell)
             
             bc = []
-            for cell in self.bcells_pool:
+            for cell in self.bcells:
                 # Probabilidad de morir
                 if random.random() < SIMULATION_PARAMS["lf_decay"]:
                     # La célula muere, no se añade a bc

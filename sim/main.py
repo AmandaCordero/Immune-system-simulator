@@ -49,6 +49,7 @@ def main():
     time_points = list(range(SIMULATION_PARAMS["duration_days"]))
 
     for day in range(SIMULATION_PARAMS["duration_days"]):
+        print(day)
         if day in SIMULATION_PARAMS["vaccination_schedule"]:
             immune_system.vaccinate(antigens)
         # Registrar datos diariamente

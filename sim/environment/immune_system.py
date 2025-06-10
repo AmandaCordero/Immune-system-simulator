@@ -40,23 +40,29 @@ class ImmuneSystem:
 
                     bc = random.choice(bcell_store.items)
                     affinity = compute_affinity(ag.epitope_vector, bc.receptors)
+                    print(affinity)
 
                     if affinity >= GC_PARAMS["THRESHOLD"]:
                         assigned_bcells[ag.id].append(bc)
+                        bc.serotype = ag.serotype
+                        bc.affinity = affinity
                         yield bcell_store.get(lambda x: x == bc)
                         # Espera tras un match exitoso
+                        print("a")
                         yield env.timeout(0.1)  
                     else:
                         # No hay unión, no espera y sigue intentando inmediatamente
+                        print("b")
                         pass
 
         for ag in antigens:
             env.process(antigen_process(ag))
 
-        env.run(until=100)
+        env.run(until=20)
 
         for gc in self.gcs:
             gc.seed_naive_cells(assigned_bcells[gc.id])
+            print(gc.bcells)
         
         self.bcells_pool = list(bcell_store.items)
  
@@ -78,24 +84,24 @@ class ImmuneSystem:
         self.fillCGs(antigens)
         for gc in self.gcs:
             memory, plasma = gc.run_cycle()
-            for ag in self.antigens:
-                self.memory_pool[ag.serotype].append(memory[ag.serotype])
-            for ag in self.antigens:
-                self.plasma_pool[ag.serotype].append(plasma[ag.serotype])
-
+            for cell in memory:
+                self.memory_pool[cell.serotype].append(cell)
+            for cell in plasma:
+                self.plasma_pool[cell.serotype].append(cell)
+            
     def step(self):
         for gc in self.gcs:
             memory, plasma = gc.run_cycle()
-            for ag in self.memory_pool.keys:
-                self.memory_pool[ag].append(memory[ag])
-            for ag in self.plasma_pool.keys:
-                self.plasma_pool[ag].append(plasma[ag])
+            for cell in memory:
+                self.memory_pool[cell.serotype].append(cell)
+            for cell in plasma:
+                self.plasma_pool[cell.serotype].append(cell)
         
-        for ag in self.antibody_levels.keys:
-            plasma_production = self.plasma_pool[ag] * SIMULATION_PARAMS["plasma_production_factor"]
-            memory_production = self.memory_pool[ag] * SIMULATION_PARAMS["memory_production_factor"]
+        for ag in self.antibody_levels.keys():
+            plasma_production = len(self.plasma_pool[ag]) * SIMULATION_PARAMS["plasma_production_factor"]
+            memory_production = len(self.memory_pool[ag]) * SIMULATION_PARAMS["memory_production_factor"]
             self.antibody_levels[ag] = (
-                (self.antibody_levels[ag] + plasma_production + memory_production) * SIMULATION_PARAMS.decay_factor
+                (self.antibody_levels[ag] + plasma_production + memory_production) * SIMULATION_PARAMS["decay_factor"]
             )
 
         self.cycle()
