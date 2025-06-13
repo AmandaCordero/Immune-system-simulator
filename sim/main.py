@@ -1,5 +1,6 @@
 # main.py
 import random
+import time
 from typing import List
 from matplotlib import pyplot as plt
 from config import *
@@ -47,18 +48,20 @@ def main():
     
     antibody_levels = {s.serotype: [] for s in antigens}
     time_points = list(range(SIMULATION_PARAMS["duration_days"]))
-
+        
     for day in range(SIMULATION_PARAMS["duration_days"]):
         # with open("log_simulacion.txt", "a") as f:
         #     f.write(f"dia {day}\n")
-        print(day)
+        # print(day)
+        inicio = time.perf_counter()
         if day in SIMULATION_PARAMS["vaccination_schedule"]:
             immune_system.vaccinate(antigens)
         # Registrar datos diariamente
         for serotype in antibody_levels:
             antibody_levels[serotype].append(immune_system.antibody_levels[serotype])
         immune_system.step()
-    
+        fin = time.perf_counter()
+        # print(fin-inicio)
     plt.figure(figsize=(12, 7))
     for serotype, levels in antibody_levels.items():
         plt.plot(time_points, levels, label=f"Serotipo {serotype}", alpha=0.8)
@@ -70,6 +73,7 @@ def main():
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.show()
+    
 
 if __name__ == "__main__":
     main()
@@ -79,7 +83,7 @@ def sim(params, times):
     res = []
     while times > 0:
         print(times)
-        print("aaaaaaa")
+        # print("aaaaaaa")
         res.append(la(params))
         times -=1
     return res

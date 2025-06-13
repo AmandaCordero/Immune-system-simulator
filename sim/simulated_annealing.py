@@ -7,13 +7,13 @@ from main import sim
 import pandas as pd
 
 serotipos = {
-    'sp1': ('pre PsC SP sp1', 'post PsC SP sp1'),
-    'sp14': ('pre PsC SP sp14', 'post PsC SP sp14'),
-    'sp18C': ('pre PsC SP sp18C', 'post PsC SP sp18C'),
-    'sp19F': ('pre PsC SP sp19F', 'post PsC SP sp19F'),
-    'sp23F': ('pre PsC SP sp23F', 'post PsC SP sp23F'),
-    'sp5': ('pre PsC SP sp5', 'post PsC SP sp5'),
-    'sp6B': ('pre PsC SP sp6B', 'post PsC SP sp6B')
+    '1': ('pre PsC SP sp1', 'post PsC SP sp1'),
+    '14': ('pre PsC SP sp14', 'post PsC SP sp14'),
+    '18C': ('pre PsC SP sp18C', 'post PsC SP sp18C'),
+    '19F': ('pre PsC SP sp19F', 'post PsC SP sp19F'),
+    '23F': ('pre PsC SP sp23F', 'post PsC SP sp23F'),
+    '5': ('pre PsC SP sp5', 'post PsC SP sp5'),
+    '6B': ('pre PsC SP sp6B', 'post PsC SP sp6B')
 }
 
 
@@ -25,29 +25,35 @@ def vecino(parametros):
     nuevo[clave] = max(0, min(0.1, nuevo[clave] + delta))  # asegurar rango [0,1]
     return nuevo
 
-def recocido_simulado(param_inicial, temp_inicial=1.0, temp_final=1e-3, alpha=0.9, max_iter=100):
+def recocido_simulado(param_inicial, temp_inicial=1.0, temp_final=1e-1, alpha=0.9, max_iter=100):
     estado_actual = param_inicial
-    energia_actual = metrica(sim(estado_actual, 48))
+    res = sim(estado_actual, 2)
+    energia_actual = metrica(res)
     T = temp_inicial
     mejor_estado = estado_actual
     mejor_energia = energia_actual
 
-    while T > temp_final:
-        for _ in range(max_iter):
-            estado_nuevo = vecino(estado_actual)
-            energia_nueva = metrica(sim(estado_nuevo))
-            delta = energia_nueva - energia_actual
-            if delta < 0 or random.random() < math.exp(-delta / T):
-                estado_actual = estado_nuevo
-                energia_actual = energia_nueva
-                if energia_nueva < mejor_energia:
-                    mejor_estado = estado_nuevo
-                    mejor_energia = energia_nueva
+    i = 0
+    while T > temp_final and i < max_iter:
+        print(f"etapa {i} del recocido")
+        print(f"Temperatura {T}")
+        i+=1
+        estado_nuevo = vecino(estado_actual)
+        resn = sim(estado_nuevo,2)
+        energia_nueva = metrica(resn)
+        delta = energia_nueva - energia_actual
+        if delta < 0 or random.random() < math.exp(-delta / T):
+            estado_actual = estado_nuevo
+            energia_actual = energia_nueva
+            if energia_nueva < mejor_energia:
+                mejor_estado = estado_nuevo
+                mejor_energia = energia_nueva
+                res = resn
         T *= alpha  # enfriamiento
-    return mejor_estado, mejor_energia
+    return mejor_estado, mejor_energia, res
 
 def metrica(antibodies):
-    df = pd.read_csv('data/train_VCN7-T.csv')
+    df = pd.read_csv('sim/data/train_VCN7-Tf_fit.csv')
     distancias_chamfer = 0
 
     for serotipo, (col_pre, col_post) in serotipos.items():
@@ -72,6 +78,10 @@ def chamfer_distance(points1, points2):
     points1, points2: arrays numpy de forma (N,2) y (M,2)
     Devuelve un valor escalar que indica la similitud (menor es más parecido).
     """
+    # print(np.squeeze(points1).shape)
+    points1 = np.squeeze(points1)
+    points2 = np.squeeze(points2)
+
     tree1 = cKDTree(points1)
     tree2 = cKDTree(points2)
 
@@ -87,4 +97,14 @@ def chamfer_distance(points1, points2):
 
 if __name__ == "__main__":
     a = recocido_simulado(SIMULATION_PARAMS)
-    print(a)
+    # print(a)
+    lista = a[2]
+    dictio = {}
+    for s in serotipos.keys():
+        dictio[s] = []
+    for elem in lista:
+        for s in serotipos.keys():
+            dictio[s].append(elem[s])
+
+    with open("log_simulacion.txt", "a") as f:
+        f.write(f"{dictio}")

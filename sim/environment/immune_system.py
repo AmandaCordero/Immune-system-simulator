@@ -9,6 +9,7 @@ from config import SIMULATION_PARAMS
 import numpy as np
 import simpy
 import random
+import time
 
 class ImmuneSystem:
     def __init__(self, antigens: List[Antigen], bcells_pool = List[BCell], params = SIMULATION_PARAMS):
@@ -26,38 +27,48 @@ class ImmuneSystem:
         
         env = simpy.Environment()
 
-        bcell_store = simpy.FilterStore(env, capacity=len(self.bcells_pool))
-        bcell_store.items = self.bcells_pool.copy()
+        # bcell_store = simpy.FilterStore(env, capacity=len(self.bcells_pool))
+        # bcell_store.items = self.bcells_pool.copy()
 
         assigned_bcells = {ag.id: [] for ag in antigens}
-        access_lock = simpy.Resource(env, capacity=1)
+        access_lock = [simpy.Resource(env, capacity=1) for i in range(len(self.bcells_pool))]
 
         def antigen_process(ag: Antigen):
             while True:
-                with access_lock.request() as req:
-                    yield req
-                    if not bcell_store.items:
-                        break
+                if len(self.bcells_pool) == 0:
+                    break
 
-                    # Selección aleatoria sin lock, pero luego intentar obtener la célula con get()
-                    bc_candidate = random.choice(bcell_store.items)
-                    affinity = compute_affinity(ag.epitope_vector, bc_candidate.receptors)
+                # Selección aleatoria sin lock, pero luego intentar obtener la célula con get()
+                bc_candidate = random.choice(self.bcells_pool)
+                # print(f"antigeno {ag.serotype} request to {bc_candidate.id}")
+                resource = access_lock[bc_candidate.id]
+                if resource.count > 0 or bc_candidate.serotype != "":
+                    continue
+                
+                req = resource.request()
+                yield req
+                affinity = compute_affinity(ag.epitope_vector, bc_candidate.receptors)
 
-                    if affinity >= self.params["THRESHOLD"]:
-                        try:
-                            # Intentar obtener la célula B de forma atómica
-                            yield bcell_store.get(lambda x: x == bc_candidate)
-                        except simpy.exceptions.FilterStoreEmpty:
-                            # Si la célula ya fue tomada por otro antígeno, continuar
-                            continue
+                if affinity >= self.params["THRESHOLD"]:
+                    # try:
+                    #     # Intentar obtener la célula B de forma atómica
+                    #     yield bcell_store.get(lambda x: x == bc_candidate)
+                    # except simpy.exceptions.FilterStoreEmpty:
+                    #     # Si la célula ya fue tomada por otro antígeno, continuar
+                    #     continue
 
-                        assigned_bcells[ag.id].append(bc_candidate)
-                        bc_candidate.serotype = ag.serotype
-                        bc_candidate.affinity = affinity
-                        yield env.timeout(0.1)
-                    else:
-                        # No hay unión, seguir intentando
-                        pass
+                    assigned_bcells[ag.id].append(bc_candidate)
+                    bc_candidate.serotype = ag.serotype
+                    bc_candidate.affinity = affinity
+                    
+                else:
+                    # No hay unión, seguir intentando
+                    pass
+
+                yield env.timeout(1)
+                resource.release(req)
+                # print(f"antigeno {ag.serotype} release to {bc_candidate.id}")
+
 
         
 
@@ -69,9 +80,9 @@ class ImmuneSystem:
 
         for gc in self.gcs:
             gc.seed_naive_cells(assigned_bcells[gc.id])
-            # print(gc.bcells)
+            # print(len(gc.bcells))
         
-        self.bcells_pool = list(bcell_store.items)
+        # self.bcells_pool = list(bcell_store.items)
  
     def cycle(self):
         # bc = []
@@ -120,14 +131,14 @@ class ImmuneSystem:
             
     def step(self):
         for gc in self.gcs:
-            with open("log_simulacion.txt", "a") as f:
-                f.write(f"serotipo {gc.antigen.serotype}, b antes{len(gc.bcells)}\n")
+            # with open("log_simulacion.txt", "a") as f:
+            #     f.write(f"serotipo {gc.antigen.serotype}, b antes{len(gc.bcells)}\n")
             
             memory, plasma = gc.run_cycle()
-            with open("log_simulacion.txt", "a") as f:
-                f.write(f"serotipo {gc.antigen.serotype}, b despues{len(gc.bcells)}\n")
-                f.write(f"memoria {len(memory)}\n")
-                f.write(f"plasma {len(plasma)}\n")
+            # with open("log_simulacion.txt", "a") as f:
+            #     f.write(f"serotipo {gc.antigen.serotype}, b despues{len(gc.bcells)}\n")
+            #     f.write(f"memoria {len(memory)}\n")
+            #     f.write(f"plasma {len(plasma)}\n")
             for cell in memory:
                 self.memory_pool[cell.serotype].append(cell)
             for cell in plasma:
