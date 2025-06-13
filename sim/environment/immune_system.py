@@ -11,17 +11,18 @@ import simpy
 import random
 
 class ImmuneSystem:
-    def __init__(self, antigens: List[Antigen], bcells_pool = List[BCell]):
+    def __init__(self, antigens: List[Antigen], bcells_pool = List[BCell], params = SIMULATION_PARAMS):
         self.gcs = []
         self.bcells_pool = bcells_pool
         self.antigens = antigens
         self.memory_pool = {ag.serotype: [] for ag in antigens}
         self.plasma_pool = {ag.serotype: [] for ag in antigens}
         self.antibody_levels = {ag.serotype: 0.0 for ag in antigens}
+        self.params = params
         
     def fillCGs(self, antigens: List[Antigen]):
         self.gcs = []
-        self.gcs = [GerminalCenter(id=ag.id, antigen=ag)for ag in antigens]
+        self.gcs = [GerminalCenter(id=ag.id, antigen=ag, params = self.params)for ag in antigens]
         
         env = simpy.Environment()
 
@@ -38,22 +39,28 @@ class ImmuneSystem:
                     if not bcell_store.items:
                         break
 
-                    bc = random.choice(bcell_store.items)
-                    affinity = compute_affinity(ag.epitope_vector, bc.receptors)
-                    print(affinity)
+                    # Selección aleatoria sin lock, pero luego intentar obtener la célula con get()
+                    bc_candidate = random.choice(bcell_store.items)
+                    affinity = compute_affinity(ag.epitope_vector, bc_candidate.receptors)
 
-                    if affinity >= SIMULATION_PARAMS["THRESHOLD"]:
-                        assigned_bcells[ag.id].append(bc)
-                        bc.serotype = ag.serotype
-                        bc.affinity = affinity
-                        yield bcell_store.get(lambda x: x == bc)
-                        # Espera tras un match exitoso
-                        print("a")
-                        yield env.timeout(0.1)  
+                    if affinity >= self.params["THRESHOLD"]:
+                        try:
+                            # Intentar obtener la célula B de forma atómica
+                            yield bcell_store.get(lambda x: x == bc_candidate)
+                        except simpy.exceptions.FilterStoreEmpty:
+                            # Si la célula ya fue tomada por otro antígeno, continuar
+                            continue
+
+                        assigned_bcells[ag.id].append(bc_candidate)
+                        bc_candidate.serotype = ag.serotype
+                        bc_candidate.affinity = affinity
+                        yield env.timeout(0.1)
                     else:
-                        # No hay unión, no espera y sigue intentando inmediatamente
-                        print("b")
+                        # No hay unión, seguir intentando
                         pass
+
+        
+
 
         for ag in antigens:
             env.process(antigen_process(ag))
@@ -83,7 +90,7 @@ class ImmuneSystem:
         # for ag in self.memory_pool.keys():
         #     self.memory_pool[ag] = [cell for cell in self.memory_pool[ag] if random.random() >= SIMULATION_PARAMS["decay_factor"]]
         for ag in self.plasma_pool.keys():
-            self.plasma_pool[ag] = [cell for cell in self.plasma_pool[ag] if random.random() >= SIMULATION_PARAMS["decay_factor"]]
+            self.plasma_pool[ag] = [cell for cell in self.plasma_pool[ag] if random.random() >= self.params["decay_factor"]]
 
     def initialize_naive(self,num_cells: int = 10000, receptor_length: int = 5) -> List['BCell']:
             """Genera células B naive con receptores aleatorios"""
@@ -127,10 +134,10 @@ class ImmuneSystem:
                 self.plasma_pool[cell.serotype].append(cell)
         
         for ag in self.antibody_levels.keys():
-            plasma_production = len(self.plasma_pool[ag]) * SIMULATION_PARAMS["plasma_production_factor"]
-            memory_production = len(self.memory_pool[ag]) * SIMULATION_PARAMS["memory_production_factor"]
+            plasma_production = len(self.plasma_pool[ag]) * self.params["plasma_production_factor"]
+            memory_production = len(self.memory_pool[ag]) * self.params["memory_production_factor"]
             self.antibody_levels[ag] = (
-                (self.antibody_levels[ag] + plasma_production + memory_production) * SIMULATION_PARAMS["decay_factor"]
+                (self.antibody_levels[ag] + plasma_production + memory_production) * self.params["decay_factor"]
             )
 
         self.cycle()

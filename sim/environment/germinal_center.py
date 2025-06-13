@@ -10,7 +10,7 @@ import random
 from config import SIMULATION_PARAMS
 
 class GerminalCenter:
-    def __init__(self, id: int, antigen: Antigen):
+    def __init__(self, id: int, antigen: Antigen, params = SIMULATION_PARAMS):
         self.id = id
         self.antigen = antigen
         self.bcells: List[BCell] = []
@@ -18,6 +18,7 @@ class GerminalCenter:
         self.plasma_cells: List[BCell] = []
         self.factors: float = 1.0  # Recursos limitantes
         self.cycles : int = 0
+        self.params = params
 
     def seed_naive_cells(self, naive_pool: List[BCell]):
         self.bcells = naive_pool
@@ -27,14 +28,14 @@ class GerminalCenter:
         if len(self.bcells) > 0:
             self.memory_cells = []
             self.plasma_cells = []
-            selected = boltzmann_selection(self.bcells, max_survivors= int(self.cycles**2 / 1000 * len(self.bcells)))
-            with open("log_simulacion.txt", "a") as f:
-                f.write(f"selected {len(selected)}\n")
+            selected = boltzmann_selection(self.bcells, max_survivors= int(self.cycles**2 / 1000 * len(self.bcells)), temperature= self.params["temperature"])
+            # with open("log_simulacion.txt", "a") as f:
+            #     f.write(f"selected {len(selected)}\n")
 
             for cell in selected:
                 # with open("log_simulacion.txt", "a") as f:
                 #     f.write(f"afinidad {cell.affinity}\n")
-                tipo = differentiate_bcell(cell)  # debe devolver 'memoria', 'plasma' o None
+                tipo = differentiate_bcell(cell, affinity_threshold_memory= self.params["affinity_threshold_memory"], affinity_threshold_plasma=self.params["affinity_threshold_plasma"])  # debe devolver 'memoria', 'plasma' o None
                 if tipo == 'memory':
                     self.memory_cells.append(cell)
                     if cell in self.bcells:
@@ -47,20 +48,20 @@ class GerminalCenter:
                     continue
             
 
-            self.bcells = [cell for cell in self.bcells if random.random() > SIMULATION_PARAMS["lf_decay"]]
+            self.bcells = [cell for cell in self.bcells if random.random() > self.params["lf_decay"]]
 
             
 
             new = []
             for cell in self.bcells:
-                if random.random() < SIMULATION_PARAMS["mutation_p"]:
-                    m = mutate_bcell(cell)
+                if random.random() < self.params["mutation_p"]:
+                    m = mutate_bcell(cell, mutation_rate=self.params["mutation_rate"], mutation_strength=self.params["mutation_strength"])
                     m.affinity = compute_affinity(self.antigen.epitope_vector, m.receptors)
                     
                     new.append(m)
             self.bcells += new
-            with open("log_simulacion.txt", "a") as f:
-                f.write(f"b desp mutar {len(self.bcells)}\n")
+            # with open("log_simulacion.txt", "a") as f:
+            #     f.write(f"b desp mutar {len(self.bcells)}\n")
             # bc = []
             # for cell in self.bcells:
             #     # Probabilidad de morir
