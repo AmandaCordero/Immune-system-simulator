@@ -5,7 +5,7 @@ from agents.antigen import Antigen
 from agents.BCell import BCell
 from processes.affinity import compute_affinity
 from processes.mutation import mutate_bcell
-from config import GC_PARAMS, SIMULATION_PARAMS
+from config import SIMULATION_PARAMS
 import numpy as np
 import simpy
 import random
@@ -42,7 +42,7 @@ class ImmuneSystem:
                     affinity = compute_affinity(ag.epitope_vector, bc.receptors)
                     print(affinity)
 
-                    if affinity >= GC_PARAMS["THRESHOLD"]:
+                    if affinity >= SIMULATION_PARAMS["THRESHOLD"]:
                         assigned_bcells[ag.id].append(bc)
                         bc.serotype = ag.serotype
                         bc.affinity = affinity
@@ -58,40 +58,69 @@ class ImmuneSystem:
         for ag in antigens:
             env.process(antigen_process(ag))
 
-        env.run(until=20)
+        env.run(until=200)
 
         for gc in self.gcs:
             gc.seed_naive_cells(assigned_bcells[gc.id])
-            print(gc.bcells)
+            # print(gc.bcells)
         
         self.bcells_pool = list(bcell_store.items)
  
     def cycle(self):
-        bc = []
-        for cell in self.bcells_pool:
-            # Probabilidad de morir
-            if random.random() < SIMULATION_PARAMS["lf_decay"]:
-                # La célula muere, no se añade a bc
-                continue
-            # Sobrevive, con probabilidad q muta
-            if random.random() < SIMULATION_PARAMS["mutation_p"]:
-                bc.append(cell)
-                cell = mutate_bcell(cell)
-            bc.append(cell)
-        self.bcells_pool = bc
+        # bc = []
+        # for cell in self.bcells_pool:
+        #     # Probabilidad de morir
+        #     if random.random() < SIMULATION_PARAMS["lf_decay"]:
+        #         # La célula muere, no se añade a bc
+        #         continue
+        #     # Sobrevive, con probabilidad q muta
+        #     if random.random() < SIMULATION_PARAMS["mutation_p"]:
+        #         bc.append(cell)
+        #         cell = mutate_bcell(cell)
+        #     bc.append(cell)
+        # self.bcells_pool = bc
+        # pass
+        # for ag in self.memory_pool.keys():
+        #     self.memory_pool[ag] = [cell for cell in self.memory_pool[ag] if random.random() >= SIMULATION_PARAMS["decay_factor"]]
+        for ag in self.plasma_pool.keys():
+            self.plasma_pool[ag] = [cell for cell in self.plasma_pool[ag] if random.random() >= SIMULATION_PARAMS["decay_factor"]]
+
+    def initialize_naive(self,num_cells: int = 10000, receptor_length: int = 5) -> List['BCell']:
+            """Genera células B naive con receptores aleatorios"""
+            return [
+                BCell(
+                    id=i,
+                    receptors=[random.random() for _ in range(receptor_length)]
+                ) for i in range(num_cells)
+            ]
+
 
     def vaccinate(self, antigens: List[Antigen]):
+        self.bcells_pool = self.initialize_naive()
         self.fillCGs(antigens)
-        for gc in self.gcs:
-            memory, plasma = gc.run_cycle()
-            for cell in memory:
-                self.memory_pool[cell.serotype].append(cell)
-            for cell in plasma:
-                self.plasma_pool[cell.serotype].append(cell)
+        # for gc in self.gcs:
+        #     with open("log_simulacion.txt", "a") as f:
+        #         f.write(f"serotipo {gc.antigen.serotype}, b antes{len(gc.bcells)}\n")
+        #     memory, plasma = gc.run_cycle()
+        #     with open("log_simulacion.txt", "a") as f:
+        #         f.write(f"serotipo {gc.antigen.serotype}, b despues{len(gc.bcells)}\n")
+        #         f.write(f"memoria {len(memory)}\n")
+        #         f.write(f"plasma {len(plasma)}\n")
+        #     for cell in memory:
+        #         self.memory_pool[cell.serotype].append(cell)
+        #     for cell in plasma:
+        #         self.plasma_pool[cell.serotype].append(cell)
             
     def step(self):
         for gc in self.gcs:
+            with open("log_simulacion.txt", "a") as f:
+                f.write(f"serotipo {gc.antigen.serotype}, b antes{len(gc.bcells)}\n")
+            
             memory, plasma = gc.run_cycle()
+            with open("log_simulacion.txt", "a") as f:
+                f.write(f"serotipo {gc.antigen.serotype}, b despues{len(gc.bcells)}\n")
+                f.write(f"memoria {len(memory)}\n")
+                f.write(f"plasma {len(plasma)}\n")
             for cell in memory:
                 self.memory_pool[cell.serotype].append(cell)
             for cell in plasma:

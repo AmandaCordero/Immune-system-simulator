@@ -1,8 +1,8 @@
 # processes/selection.py
 import numpy as np
+from config import SIMULATION_PARAMS
 
-
-def boltzmann_selection(bcells, temperature=0.1, max_survivors=None):
+def boltzmann_selection(bcells, temperature=SIMULATION_PARAMS["temperature"], max_survivors=None):
     """
     Selección estocástica tipo Boltzmann basada en afinidad.
     

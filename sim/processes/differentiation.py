@@ -1,6 +1,7 @@
 # processes/differentiation.py
+from config import SIMULATION_PARAMS
 
-def differentiate_bcell(bcell, affinity_threshold_memory=0.8, affinity_threshold_plasma=0.6):
+def differentiate_bcell(bcell, affinity_threshold_memory = SIMULATION_PARAMS["affinity_threshold_memory"], affinity_threshold_plasma=SIMULATION_PARAMS["affinity_threshold_plasma"]):
     """
     Decide el destino de una célula B tras selección, basado en su afinidad.
     
