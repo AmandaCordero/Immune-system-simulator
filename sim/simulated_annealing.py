@@ -27,7 +27,7 @@ def vecino(parametros):
 
 def recocido_simulado(param_inicial, temp_inicial=1.0, temp_final=1e-1, alpha=0.9, max_iter=100):
     estado_actual = param_inicial
-    res = sim(estado_actual, 2)
+    res = sim(estado_actual, 48)
     energia_actual = metrica(res)
     T = temp_inicial
     mejor_estado = estado_actual
@@ -39,7 +39,7 @@ def recocido_simulado(param_inicial, temp_inicial=1.0, temp_final=1e-1, alpha=0.
         print(f"Temperatura {T}")
         i+=1
         estado_nuevo = vecino(estado_actual)
-        resn = sim(estado_nuevo,2)
+        resn = sim(estado_nuevo,48)
         energia_nueva = metrica(resn)
         delta = energia_nueva - energia_actual
         if delta < 0 or random.random() < math.exp(-delta / T):
@@ -106,5 +106,5 @@ if __name__ == "__main__":
         for s in serotipos.keys():
             dictio[s].append(elem[s])
 
-    with open("log_simulacion.txt", "a") as f:
+    with open("log_simulacion.txt", "w") as f:
         f.write(f"{dictio}")
