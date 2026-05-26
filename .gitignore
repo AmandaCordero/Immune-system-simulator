@@ -6,3 +6,5 @@ sim/environment/__pycache__
 sim/processes/__pycache__
 log_simulacion.txt
 data
+misc
+images
