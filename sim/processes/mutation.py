@@ -4,7 +4,11 @@ import numpy as np
 from agents.BCell import BCell
 from config import SIMULATION_PARAMS
 
-def mutate_bcell(bcell: BCell, mutation_rate=SIMULATION_PARAMS["mutation_rate"], mutation_strength=SIMULATION_PARAMS["mutation_strength"]):
+def mutate_bcell(
+    bcell: BCell,
+    mutation_rate=SIMULATION_PARAMS["mutation_rate"],
+    mutation_strength=SIMULATION_PARAMS["mutation_strength"],
+):
     """
     Aplica hipermutación somática a la célula B modificando su vector receptor.
     

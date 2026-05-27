@@ -7,6 +7,7 @@ from processes.affinity import compute_affinity
 from processes.differentiation import differentiate_bcell
 from processes.mutation import mutate_bcell
 import random
+import math
 from config import SIMULATION_PARAMS
 
 class GerminalCenter:
@@ -28,7 +29,28 @@ class GerminalCenter:
         if len(self.bcells) > 0:
             self.memory_cells = []
             self.plasma_cells = []
-            selected = boltzmann_selection(self.bcells, max_survivors= int(self.cycles**2 / 1000 * len(self.bcells)), temperature= self.params["temperature"])
+            selection_schedule = self.params["selection_schedule"]
+            base_temp = selection_schedule["base_temperature"]
+            min_temp = selection_schedule["min_temperature"]
+            temp_decay = selection_schedule["decay_per_cycle"]
+            adaptive_temperature = max(
+                min_temp,
+                base_temp * math.exp(-temp_decay * max(self.cycles - 1, 0)),
+            )
+
+            min_fraction = self.params["min_selection_fraction"]
+            max_fraction = self.params["max_selection_fraction"]
+            growth = self.params["selection_growth_rate"]
+            frac = min_fraction + (max_fraction - min_fraction) * (
+                1.0 - math.exp(-self.cycles / max(growth, 1e-6))
+            )
+            survivors = max(1, int(frac * len(self.bcells)))
+            survivors = min(survivors, len(self.bcells))
+            selected = boltzmann_selection(
+                self.bcells,
+                max_survivors=survivors,
+                temperature=adaptive_temperature,
+            )
             # with open("log_simulacion.txt", "a") as f:
             #     f.write(f"selected {len(selected)}\n")
 
@@ -52,14 +74,34 @@ class GerminalCenter:
 
             
 
+            mutation_schedule = self.params["mutation_schedule"]
+            base_strength = mutation_schedule["base_strength"]
+            min_strength = mutation_schedule["min_strength"]
+            strength_decay = mutation_schedule["decay_per_cycle"]
+            cycle_strength = max(
+                min_strength,
+                base_strength * math.exp(-strength_decay * max(self.cycles - 1, 0)),
+            )
+
             new = []
             for cell in self.bcells:
                 if random.random() < self.params["mutation_p"]:
-                    m = mutate_bcell(cell, mutation_rate=self.params["mutation_rate"], mutation_strength=self.params["mutation_strength"])
+                    affinity_factor = max(0.1, 1.0 - cell.affinity)
+                    adaptive_strength = cycle_strength * affinity_factor
+                    m = mutate_bcell(
+                        cell,
+                        mutation_rate=self.params["mutation_rate"],
+                        mutation_strength=adaptive_strength,
+                    )
                     m.affinity = compute_affinity(self.antigen.epitope_vector, m.receptors)
-                    
+
                     new.append(m)
             self.bcells += new
+
+            max_gc_pool = self.params["max_gc_pool"]
+            if len(self.bcells) > max_gc_pool:
+                random.shuffle(self.bcells)
+                self.bcells = self.bcells[:max_gc_pool]
             # with open("log_simulacion.txt", "a") as f:
             #     f.write(f"b desp mutar {len(self.bcells)}\n")
             # bc = []

@@ -1,0 +1,45 @@
+{
+  "duration_days": 170,
+  "vaccination_schedule": [60, 80, 120],
+  "THRESHOLD": 0.35,
+  "decay_factor": 0.958,
+  "lf_decay": 0.21,
+  "mutation_p": 0.18,
+  "mutation_rate": 0.55,
+  "mutation_strength": 0.3,
+  "temperature": 0.09,
+  "naive_pool_size": 3200,
+  "naive_recruitment_per_dose": 900,
+  "min_selection_fraction": 0.018,
+  "max_selection_fraction": 0.28,
+  "selection_growth_rate": 140.0,
+  "max_gc_pool": 5600,
+  "selection_schedule": {
+    "base_temperature": 0.13,
+    "min_temperature": 0.045,
+    "decay_per_cycle": 0.007
+  },
+  "mutation_schedule": {
+    "base_strength": 0.26,
+    "min_strength": 0.06,
+    "decay_per_cycle": 0.008
+  },
+  "plasma_production_factor": {
+    "1": 0.0058,
+    "5": 0.0063,
+    "6B": 0.0072,
+    "14": 0.0155,
+    "18C": 0.0046,
+    "19F": 0.0056,
+    "23F": 0.0059
+  },
+  "memory_production_factor": {
+    "1": 0.0011,
+    "5": 0.0012,
+    "6B": 0.00135,
+    "14": 0.0024,
+    "18C": 0.0009,
+    "19F": 0.00115,
+    "23F": 0.0012
+  }
+}

@@ -14,13 +14,19 @@ def boltzmann_selection(bcells, temperature=SIMULATION_PARAMS["temperature"], ma
     Returns:
         list: células B seleccionadas para sobrevivir.
     """
-    affinities = np.array([b.affinity for b in bcells])
+    if not bcells:
+        return []
+    if max_survivors is not None and max_survivors <= 0:
+        return []
+
+    affinities = np.array([b.affinity for b in bcells], dtype=float)
     
     # Evitar overflow: normalizar afinidades restando el máximo
     affinities_norm = affinities - np.max(affinities)
     
     # Calcular probabilidades tipo Boltzmann
-    probs = np.exp(affinities_norm / temperature)
+    temp = max(float(temperature), 1e-6)
+    probs = np.exp(affinities_norm / temp)
     probs /= probs.sum()
     
     # Número de sobrevivientes
@@ -28,8 +34,12 @@ def boltzmann_selection(bcells, temperature=SIMULATION_PARAMS["temperature"], ma
         max_survivors = len(bcells)
     
     # Selección sin reemplazo según probabilidades
-    selected_indices = np.random.choice(len(bcells), size=max_survivors, replace=False, p=probs)
+    selected_indices = np.random.choice(
+        len(bcells),
+        size=max_survivors,
+        replace=False,
+        p=probs,
+    )
     
     selected = [bcells[i] for i in selected_indices]
     return selected
-
